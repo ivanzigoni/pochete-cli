@@ -7,6 +7,8 @@
 [![Status do workflow de tag](https://img.shields.io/github/actions/workflow/status/ivanzigoni/pochete-cli/tag.yml)](https://github.com/ivanzigoni/pochete-cli/actions/workflows/tag.yml)
 [![Data da última release](https://img.shields.io/github/release-date/ivanzigoni/pochete-cli)](https://github.com/ivanzigoni/pochete-cli/releases)
 
+---
+
 O pochete-cli é a ferramenta de linha de comando que inicializa um workspace da
 [pochete-toolkit](https://github.com/ivanzigoni/pochete-toolkit) com os repositórios de aplicação
 já clonados dentro dele. Um único comando substitui os passos manuais de clonar o workspace, criar
