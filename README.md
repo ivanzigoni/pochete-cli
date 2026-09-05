@@ -35,16 +35,26 @@ recente.
 ## Uso
 
 ```bash
-pochete clone <repo1> [repo2 ...] <workspace-name>
+pochete clone [--yes] [--no-defaults] <repo1> [repo2 ...] <workspace-name>
 ```
 
-O subcomando `clone` executa dois passos:
+O subcomando `clone` executa três passos:
 
 1. Clona a [pochete-toolkit](https://github.com/ivanzigoni/pochete-toolkit) em
    `<workspace-name>` — a origem é fixa, não configurável por argumento.
 2. Clona cada `<repoN>` informado dentro de `<workspace-name>/project/`.
+3. Pergunta se deseja aplicar as configurações padrão recomendadas de allowlist (git e paths) no
+   workspace recém-criado. Se confirmado, sobrescreve
+   `.claude/hooks/pctk__enforce-git-allowlist/git-allowlist.json` com um conjunto de subcomandos
+   git seguros para uso sem intervenção humana, e
+   `.claude/hooks/pctk__enforce-path-allowlist/path-allowlist.json` com a pasta de planos do
+   usuário do sistema (`~/.claude/plans`).
 
 O comando falha se `<workspace-name>` já existir, para nunca sobrescrever um diretório existente.
+
+A pergunta do passo 3 só aparece em terminal interativo. Para automação (CI, scripts), use
+`--yes` para aplicar os defaults sem perguntar, ou `--no-defaults` para não aplicar — sem
+nenhuma das duas flags, uma execução não-interativa aplica os defaults automaticamente.
 
 ### Exemplo
 
