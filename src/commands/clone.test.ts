@@ -1,84 +1,53 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync } from 'node:fs';
-import { execa } from 'execa';
-import { runClone, usage, WORKSPACE_REPO } from './clone.js';
+import { createWorkspace } from '../core/create-workspace.js';
+import { runClone, usage } from './clone.js';
 
-vi.mock('node:fs', () => ({ existsSync: vi.fn() }));
-vi.mock('execa', () => ({ execa: vi.fn() }));
+vi.mock('../core/create-workspace.js', () => ({ createWorkspace: vi.fn() }));
 
-const existsSyncMock = vi.mocked(existsSync);
-const execaMock = vi.mocked(execa);
+const createWorkspaceMock = vi.mocked(createWorkspace);
 
 describe('runClone', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    existsSyncMock.mockReturnValue(false);
-    execaMock.mockResolvedValue({} as never);
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    createWorkspaceMock.mockResolvedValue(undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
   });
 
-  it('clona a toolkit e um repo em project/', async () => {
-    await runClone(['git@github.com:org/servico.git', 'meu-workspace']);
+  it('delega para createWorkspace com workspace, repos e defaults aplicados', async () => {
+    await runClone({ workspace: 'ws', repo: ['repoA.git', 'repoB.git'] });
 
-    expect(execaMock).toHaveBeenNthCalledWith(
-      1,
-      'git',
-      ['clone', WORKSPACE_REPO, 'meu-workspace'],
-      { stdio: 'inherit' },
-    );
-    expect(execaMock).toHaveBeenNthCalledWith(
-      2,
-      'git',
-      ['clone', 'git@github.com:org/servico.git', 'meu-workspace/project/servico'],
-      { stdio: 'inherit' },
-    );
-    expect(console.log).toHaveBeenCalledWith('==> pronto: meu-workspace');
+    expect(createWorkspaceMock).toHaveBeenCalledWith({
+      workspaceName: 'ws',
+      repos: ['repoA.git', 'repoB.git'],
+      applyDefaults: true,
+    });
     expect(process.exit).not.toHaveBeenCalled();
   });
 
-  it('clona múltiplos repos em project/', async () => {
-    await runClone(['repoA.git', 'repoB.git', 'ws']);
+  it('repassa --no-defaults como applyDefaults: false', async () => {
+    await runClone({ workspace: 'ws', repo: ['repo.git'], defaults: false });
 
-    expect(execaMock).toHaveBeenCalledTimes(3);
-    expect(execaMock).toHaveBeenNthCalledWith(
-      2,
-      'git',
-      ['clone', 'repoA.git', 'ws/project/repoA'],
-      { stdio: 'inherit' },
-    );
-    expect(execaMock).toHaveBeenNthCalledWith(
-      3,
-      'git',
-      ['clone', 'repoB.git', 'ws/project/repoB'],
-      { stdio: 'inherit' },
-    );
+    expect(createWorkspaceMock).toHaveBeenCalledWith({
+      workspaceName: 'ws',
+      repos: ['repo.git'],
+      applyDefaults: false,
+    });
   });
 
-  it('falha quando o workspace já existe', async () => {
-    existsSyncMock.mockReturnValue(true);
-
-    await runClone(['repo.git', 'ws-existente']);
-
-    expect(console.error).toHaveBeenCalledWith("erro: 'ws-existente' já existe");
-    expect(execaMock).not.toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
-  });
-
-  it('falha quando faltam argumentos', async () => {
-    await runClone(['apenas-um-arg']);
+  it('falha quando --workspace está ausente', async () => {
+    await runClone({ repo: ['repo.git'] });
 
     expect(console.error).toHaveBeenCalledWith(usage());
-    expect(existsSyncMock).not.toHaveBeenCalled();
+    expect(createWorkspaceMock).not.toHaveBeenCalled();
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
-  it('propaga o exit code do git quando o clone falha', async () => {
-    execaMock.mockRejectedValueOnce(Object.assign(new Error('boom'), { exitCode: 128 }));
+  it('falha quando nenhum --repo é informado', async () => {
+    await runClone({ workspace: 'ws' });
 
-    await runClone(['repo.git', 'ws']);
-
-    expect(process.exit).toHaveBeenCalledWith(128);
+    expect(console.error).toHaveBeenCalledWith(usage());
+    expect(createWorkspaceMock).not.toHaveBeenCalled();
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 });

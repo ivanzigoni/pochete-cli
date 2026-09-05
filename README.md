@@ -34,25 +34,52 @@ recente.
 
 ## Uso
 
+Dois subcomandos criam um workspace novo — a diferença é só a forma de dar o input, o resultado é
+o mesmo:
+
+- `pochete clone`: inline, todo o input vem de flags. Pensado para ser chamado por um agente ou
+  script, nunca pergunta nada.
+- `pochete init`: menu interativo. Pensado para uso humano, pergunta cada decisão separadamente.
+
+Os dois passos são sempre os mesmos:
+
+1. Clona a [pochete-toolkit](https://github.com/ivanzigoni/pochete-toolkit) no workspace — a
+   origem é fixa, não configurável.
+2. Clona cada repositório de aplicação informado dentro de `<workspace>/project/`.
+
+O comando falha se o diretório do workspace já existir, para nunca sobrescrever um diretório
+existente.
+
+Opcionalmente, os dois subcomandos também aplicam as configurações padrão recomendadas de
+allowlist no workspace recém-criado: sobrescrevem
+`.claude/hooks/pctk__enforce-git-allowlist/git-allowlist.json` com um conjunto de subcomandos git
+seguros para uso sem intervenção humana, e
+`.claude/hooks/pctk__enforce-path-allowlist/path-allowlist.json` com a pasta de planos do usuário
+do sistema (`~/.claude/plans`).
+
+### `pochete clone`
+
 ```bash
-pochete clone <repo1> [repo2 ...] <workspace-name>
+pochete clone --workspace <nome> --repo <url> [--repo <url> ...] [--no-defaults]
 ```
 
-O subcomando `clone` executa dois passos:
-
-1. Clona a [pochete-toolkit](https://github.com/ivanzigoni/pochete-toolkit) em
-   `<workspace-name>` — a origem é fixa, não configurável por argumento.
-2. Clona cada `<repoN>` informado dentro de `<workspace-name>/project/`.
-
-O comando falha se `<workspace-name>` já existir, para nunca sobrescrever um diretório existente.
-
-### Exemplo
+`--workspace` e ao menos um `--repo` são obrigatórios. `--no-defaults` desativa a aplicação dos
+defaults de allowlist — sem a flag, eles são aplicados.
 
 ```bash
-pochete clone git@github.com:minha-org/meu-servico.git meu-workspace
+pochete clone --workspace meu-workspace --repo git@github.com:minha-org/meu-servico.git
 ```
 
-Resulta em:
+### `pochete init`
+
+```bash
+pochete init
+```
+
+Sem argumentos: pergunta o nome do workspace, a URL de cada repositório de aplicação (um de cada
+vez, com a opção de adicionar mais), e por fim se deve aplicar os defaults de allowlist.
+
+### Resultado
 
 ```
 meu-workspace/

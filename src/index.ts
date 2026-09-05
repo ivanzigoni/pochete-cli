@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { registerCloneCommand, usage } from './commands/clone.js';
+import { registerCloneCommand, usage as cloneUsage } from './commands/clone.js';
+import { registerInitCommand } from './commands/init.js';
+
+const KNOWN_SUBCOMMANDS = ['clone', 'init'];
+
+function usage(): string {
+  return [cloneUsage(), 'uso: pochete init'].join('\n');
+}
 
 async function main(): Promise<void> {
   const [subcommand, ...rest] = process.argv.slice(2);
@@ -16,7 +23,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (subcommand !== 'clone') {
+  if (!KNOWN_SUBCOMMANDS.includes(subcommand)) {
     console.error(`subcomando desconhecido: '${subcommand}'`);
     console.error(usage());
     process.exit(1);
@@ -26,8 +33,9 @@ async function main(): Promise<void> {
   const program = new Command();
   program.name('pochete').helpOption(false).addHelpCommand(false);
   registerCloneCommand(program);
+  registerInitCommand(program);
 
-  await program.parseAsync(['node', 'pochete', 'clone', ...rest]);
+  await program.parseAsync(['node', 'pochete', subcommand, ...rest]);
 }
 
 main().catch((error: unknown) => {
