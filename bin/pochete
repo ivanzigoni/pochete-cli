@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+WORKSPACE_REPO="git@github.com:ivanzigoni/pochete-toolkit.git"
+
+usage() {
+  echo "uso: pochete clone <repo1> [repo2 ...] <workspace-name>" >&2
+}
+
+cmd_clone() {
+  if [ "$#" -lt 2 ]; then
+    usage
+    exit 1
+  fi
+
+  local args=("$@")
+  local n="${#args[@]}"
+  local workspace_name="${args[$((n-1))]}"
+  local repos=("${args[@]:0:$((n-1))}")
+
+  if [ -e "$workspace_name" ]; then
+    echo "erro: '$workspace_name' já existe" >&2
+    exit 1
+  fi
+
+  echo "==> clonando workspace pochete-toolkit em '$workspace_name'"
+  git clone "$WORKSPACE_REPO" "$workspace_name"
+
+  local repo
+  for repo in "${repos[@]}"; do
+    echo "==> clonando $repo em project/"
+    git clone "$repo" "$workspace_name/project/$(basename "$repo" .git)"
+  done
+
+  echo "==> pronto: $workspace_name"
+}
+
+main() {
+  local subcommand="${1:-}"
+  shift || true
+
+  case "$subcommand" in
+    clone) cmd_clone "$@" ;;
+    ""|-h|--help) usage; exit 1 ;;
+    *)
+      echo "subcomando desconhecido: '$subcommand'" >&2
+      usage
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
