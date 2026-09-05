@@ -1,6 +1,6 @@
 {
   "name": "pochete-cli",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "CLI que inicializa um workspace da pochete-toolkit com os repositórios de aplicação já clonados dentro dele.",
