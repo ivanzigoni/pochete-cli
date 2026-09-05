@@ -1,4 +1,4 @@
-<img src="hammer.png" alt="pochete-cli" width="120" />
+<img src="pochete.png" alt="pochete-cli" width="120" />
 
 # pochete-cli
 
