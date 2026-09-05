@@ -1,0 +1,42 @@
+{
+  "name": "pochete-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI que inicializa um workspace da pochete-toolkit com os repositórios de aplicação já clonados dentro dele.",
+  "engines": {
+    "node": ">=22.22.1"
+  },
+  "scripts": {
+    "build": "tsup",
+    "postbuild": "cp dist/index.cjs dist/pochete && chmod +x dist/pochete",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "execa": "^10.0.1"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.1",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0",
+    "prettier": "^3.9.6",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.69.0",
+    "vitest": "^5.0.0"
+  }
+}
