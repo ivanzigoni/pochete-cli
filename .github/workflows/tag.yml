@@ -17,6 +17,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configura Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instala dependências
+        run: npm ci
+
+      - name: Build do artefato
+        run: npm run build
+
       - name: Calcula e cria a tag semver
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.2
@@ -31,3 +42,4 @@ jobs:
           tag_name: ${{ steps.tag_version.outputs.new_tag }}
           name: ${{ steps.tag_version.outputs.new_tag }}
           generate_release_notes: true
+          files: dist/pochete
