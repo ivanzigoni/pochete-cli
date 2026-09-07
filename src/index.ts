@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { registerBuildCommand, usage as buildUsage } from './commands/build.js';
 import { registerCloneCommand, usage as cloneUsage } from './commands/clone.js';
 import { registerInitCommand } from './commands/init.js';
 
-const KNOWN_SUBCOMMANDS = ['clone', 'init'];
+const KNOWN_SUBCOMMANDS = ['clone', 'init', 'build'];
 
 function usage(): string {
-  return [cloneUsage(), 'uso: pochete init'].join('\n');
+  return [cloneUsage(), 'uso: pochete init', buildUsage()].join('\n');
 }
 
 async function main(): Promise<void> {
@@ -34,6 +35,7 @@ async function main(): Promise<void> {
   program.name('pochete').helpOption(false).addHelpCommand(false);
   registerCloneCommand(program);
   registerInitCommand(program);
+  registerBuildCommand(program);
 
   await program.parseAsync(['node', 'pochete', subcommand, ...rest]);
 }
