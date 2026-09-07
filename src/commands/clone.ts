@@ -8,7 +8,7 @@ export interface CloneOptions {
 }
 
 export function usage(): string {
-  return 'uso: pochete clone --workspace <nome> --repo <url> [--repo <url> ...] [--no-defaults]';
+  return 'uso: pochete clone --workspace <nome> [--repo <url> ...] [--no-defaults]';
 }
 
 export function registerCloneCommand(program: Command): void {
@@ -35,7 +35,7 @@ function collectRepo(value: string, previous: string[]): string[] {
 export async function runClone(options: CloneOptions): Promise<void> {
   const repos = options.repo ?? [];
 
-  if (!options.workspace || repos.length === 0) {
+  if (!options.workspace) {
     console.error(usage());
     process.exit(1);
     return;

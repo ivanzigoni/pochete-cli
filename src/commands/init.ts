@@ -18,9 +18,17 @@ export async function runInit(): Promise<void> {
     validate: validateWorkspaceName,
   });
 
-  const repos: string[] = [await input({ message: REPO_URL_MESSAGE, validate: validateRepoUrl })];
+  const repos: string[] = [];
 
-  while (await confirm({ message: 'Adicionar outro repositório de aplicação?', default: false })) {
+  while (
+    await confirm({
+      message:
+        repos.length === 0
+          ? 'Adicionar um repositório de aplicação a project/?'
+          : 'Adicionar outro repositório de aplicação?',
+      default: false,
+    })
+  ) {
     repos.push(await input({ message: REPO_URL_MESSAGE, validate: validateRepoUrl }));
   }
 
