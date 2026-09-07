@@ -24,7 +24,9 @@ curl -fsSL https://raw.githubusercontent.com/ivanzigoni/pochete-cli/main/install
 
 O instalador baixa o script `pochete` para `~/.local/bin` (ou para o diretório definido em
 `$POCHETE_INSTALL_DIR`) e o marca como executável. Se esse diretório não estiver no seu `PATH`, o
-instalador avisa e mostra a linha para adicionar ao `~/.bashrc`.
+instalador avisa e mostra a linha para adicionar ao `~/.bashrc`. Requer Node.js e npm instalados —
+o instalador também usa o npm para instalar, ao lado do binário, a dependência de runtime do
+comando `build`.
 
 ## Atualização
 
@@ -83,6 +85,29 @@ Sem argumentos: pergunta o nome do workspace, se deve adicionar um repositório 
 sim, a URL — um de cada vez, com a opção de adicionar mais), e por fim se deve aplicar os defaults
 de allowlist. Respondendo "não" já na primeira pergunta sobre repositório, o workspace nasce sem
 nenhum em `project/`.
+
+### `pochete build`
+
+```bash
+pochete build
+```
+
+Roda a partir da raiz de um workspace já criado. Lê `domain/` e escreve o Markdown final em
+`.claude/` — sempre sobrescrevendo incondicionalmente, já que esse conteúdo é gerado e nunca
+editado à mão. Falha se `domain/` não existir no diretório atual.
+
+`domain/` não tem estrutura de pastas obrigatória — organize o conteúdo em quantos
+subdiretórios quiser. Qualquer arquivo `.tsx` em qualquer profundidade vira componente
+customizado disponível para os `.mdx`. `Skill`, `Rule` e `Block` são as três unidades de
+construção disponíveis: cada `.mdx` precisa estar embrulhado em uma delas para gerar saída.
+
+- `<Skill name="..." description="...">` → `.claude/skills/user__<nome-do-arquivo>/SKILL.md`
+- `<Rule paths={[...]}>` → `.claude/rules/user__<nome-do-arquivo>.md`
+- `<Block>` → `.claude/blocks/user__<nome-do-arquivo>.md`
+
+Um `.mdx` que não usa nenhuma das três é ignorado pelo build (aviso no terminal, sem falhar) —
+é o caso, por exemplo, de um fragmento que só existe para ser incluído por outro arquivo via
+`<Include>`.
 
 ### Resultado
 

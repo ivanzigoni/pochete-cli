@@ -7,6 +7,12 @@
   "engines": {
     "node": ">=22.22.1"
   },
+  "exports": {
+    "./components": {
+      "types": "./dist/components.d.cts",
+      "require": "./dist/components.cjs"
+    }
+  },
   "scripts": {
     "build": "tsup",
     "postbuild": "cp dist/index.cjs dist/pochete && chmod +x dist/pochete",
@@ -23,13 +29,19 @@
   "dependencies": {
     "@inquirer/prompts": "^8.7.1",
     "commander": "^15.0.0",
-    "execa": "^10.0.1"
+    "execa": "^10.0.1",
+    "jiti": "^2.7.0",
+    "mdx-prompt": "^0.4.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.20.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
