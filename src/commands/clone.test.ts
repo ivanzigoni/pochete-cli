@@ -43,11 +43,15 @@ describe('runClone', () => {
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
-  it('falha quando nenhum --repo é informado', async () => {
+  it('cria o workspace sem repositórios quando nenhum --repo é informado', async () => {
     await runClone({ workspace: 'ws' });
 
-    expect(console.error).toHaveBeenCalledWith(usage());
-    expect(createWorkspaceMock).not.toHaveBeenCalled();
-    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(createWorkspaceMock).toHaveBeenCalledWith({
+      workspaceName: 'ws',
+      repos: [],
+      applyDefaults: true,
+    });
+    expect(console.error).not.toHaveBeenCalled();
+    expect(process.exit).not.toHaveBeenCalled();
   });
 });

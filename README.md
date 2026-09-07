@@ -45,7 +45,9 @@ Os dois passos são sempre os mesmos:
 
 1. Clona a [pochete-toolkit](https://github.com/ivanzigoni/pochete-toolkit) no workspace — a
    origem é fixa, não configurável.
-2. Clona cada repositório de aplicação informado dentro de `<workspace>/project/`.
+2. Opcionalmente, clona cada repositório de aplicação informado dentro de
+   `<workspace>/project/`. Sem nenhum repositório informado, o workspace nasce com `project/`
+   vazio.
 
 O comando falha se o diretório do workspace já existir, para nunca sobrescrever um diretório
 existente.
@@ -60,11 +62,12 @@ do sistema (`~/.claude/plans`).
 ### `pochete clone`
 
 ```bash
-pochete clone --workspace <nome> --repo <url> [--repo <url> ...] [--no-defaults]
+pochete clone --workspace <nome> [--repo <url> ...] [--no-defaults]
 ```
 
-`--workspace` e ao menos um `--repo` são obrigatórios. `--no-defaults` desativa a aplicação dos
-defaults de allowlist — sem a flag, eles são aplicados.
+`--workspace` é obrigatório. `--repo` é opcional e repetível — sem nenhum `--repo`, o workspace
+nasce com `project/` vazio. `--no-defaults` desativa a aplicação dos defaults de allowlist — sem a
+flag, eles são aplicados.
 
 ```bash
 pochete clone --workspace meu-workspace --repo git@github.com:minha-org/meu-servico.git
@@ -76,8 +79,10 @@ pochete clone --workspace meu-workspace --repo git@github.com:minha-org/meu-serv
 pochete init
 ```
 
-Sem argumentos: pergunta o nome do workspace, a URL de cada repositório de aplicação (um de cada
-vez, com a opção de adicionar mais), e por fim se deve aplicar os defaults de allowlist.
+Sem argumentos: pergunta o nome do workspace, se deve adicionar um repositório de aplicação (e, se
+sim, a URL — um de cada vez, com a opção de adicionar mais), e por fim se deve aplicar os defaults
+de allowlist. Respondendo "não" já na primeira pergunta sobre repositório, o workspace nasce sem
+nenhum em `project/`.
 
 ### Resultado
 
@@ -85,7 +90,7 @@ vez, com a opção de adicionar mais), e por fim se deve aplicar os defaults de 
 meu-workspace/
 ├── ...                    # arquivos da pochete-toolkit
 └── project/
-    └── meu-servico/
+    └── meu-servico/       # um subdiretório por repositório informado, ou nenhum
 ```
 
 ## Licença

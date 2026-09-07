@@ -23,6 +23,7 @@ describe('runInit', () => {
   it('pergunta nome, repo e aplica defaults quando não há mais repos e a resposta é sim', async () => {
     inputMock.mockResolvedValueOnce('meu-workspace').mockResolvedValueOnce('repo.git');
     confirmMock
+      .mockResolvedValueOnce(true) // adicionar um repositório?
       .mockResolvedValueOnce(false) // adicionar outro repositório?
       .mockResolvedValueOnce(true); // aplicar defaults?
 
@@ -39,11 +40,18 @@ describe('runInit', () => {
     expect(confirmMock).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
+        message: 'Adicionar um repositório de aplicação a project/?',
+        default: false,
+      }),
+    );
+    expect(confirmMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
         message: 'Adicionar outro repositório de aplicação?',
         default: false,
       }),
     );
-    expect(confirmMock).toHaveBeenNthCalledWith(2, expect.objectContaining({ default: true }));
+    expect(confirmMock).toHaveBeenNthCalledWith(3, expect.objectContaining({ default: true }));
     expect(createWorkspaceMock).toHaveBeenCalledWith({
       workspaceName: 'meu-workspace',
       repos: ['repo.git'],
@@ -58,6 +66,7 @@ describe('runInit', () => {
       .mockResolvedValueOnce('repoB.git')
       .mockResolvedValueOnce('repoC.git');
     confirmMock
+      .mockResolvedValueOnce(true) // adicionar repositório?
       .mockResolvedValueOnce(true) // adicionar mais um (após repoA)
       .mockResolvedValueOnce(true) // adicionar mais um (após repoB)
       .mockResolvedValueOnce(false) // não adicionar mais (após repoC)
@@ -72,9 +81,27 @@ describe('runInit', () => {
     });
   });
 
+  it('cria o workspace sem repositórios quando a resposta já é não na primeira pergunta', async () => {
+    inputMock.mockResolvedValueOnce('ws-sem-repo');
+    confirmMock
+      .mockResolvedValueOnce(false) // adicionar repositório?
+      .mockResolvedValueOnce(false); // aplicar defaults?
+
+    await runInit();
+
+    expect(createWorkspaceMock).toHaveBeenCalledWith({
+      workspaceName: 'ws-sem-repo',
+      repos: [],
+      applyDefaults: false,
+    });
+  });
+
   it('valida que o nome do workspace não pode já existir', async () => {
     inputMock.mockResolvedValueOnce('ws-existente').mockResolvedValueOnce('repo.git');
-    confirmMock.mockResolvedValueOnce(false).mockResolvedValueOnce(false);
+    confirmMock
+      .mockResolvedValueOnce(true) // adicionar repositório?
+      .mockResolvedValueOnce(false) // adicionar outro?
+      .mockResolvedValueOnce(false); // aplicar defaults?
 
     await runInit();
 
