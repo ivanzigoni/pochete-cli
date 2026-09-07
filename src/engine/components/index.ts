@@ -2,6 +2,7 @@ export * from './block.js';
 export * from './context.js';
 export * from './control-flow.js';
 export * from './frontmatter.js';
+export * from './input-format.js';
 export * from './markdown.js';
 export * from './output-format.js';
 export * from './procedure.js';
