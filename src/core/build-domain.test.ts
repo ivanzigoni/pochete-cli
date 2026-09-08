@@ -1,4 +1,13 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -33,9 +42,9 @@ describe('buildDomain', () => {
     await expect(buildDomain(workspaceDir)).rejects.toThrow(/domain/);
   });
 
-  it('mapeia um .mdx embrulhado em <Skill>, em qualquer profundidade, para .claude/skills/user__<nome>/SKILL.md', async () => {
+  it('mapeia um SKILL.mdx dentro de uma pasta, em qualquer profundidade, para .claude/skills/user__<nome-da-pasta>/SKILL.md', async () => {
     writeDomainFile(
-      'time-a/onboarding/minha-skill.mdx',
+      'time-a/onboarding/minha-skill/SKILL.mdx',
       '<Skill name="minha-skill" description="descrição de teste">conteúdo</Skill>',
     );
 
@@ -65,14 +74,29 @@ describe('buildDomain', () => {
   it('mantém a classificação do wrapper mais externo mesmo com um <Block> aninhado por dentro (via <Include>)', async () => {
     writeDomainFile('bloco-interno.mdx', '<Block>conteúdo interno</Block>');
     writeDomainFile(
-      'skill-com-include.mdx',
-      '<Skill name="x" description="y"><Include skill="bloco-interno" />resto da skill</Skill>',
+      'skill-com-include/SKILL.mdx',
+      '<Skill name="x" description="y"><Include skill="../bloco-interno" />resto da skill</Skill>',
     );
 
     await buildDomain(workspaceDir);
 
     expect(readOutput('skills/user__skill-com-include/SKILL.md')).toContain('conteúdo interno');
     expect(readOutput('blocks/user__bloco-interno.md')).toContain('conteúdo interno');
+  });
+
+  it('lança erro quando um arquivo chamado SKILL.mdx não usa <Skill> como raiz', async () => {
+    writeDomainFile('minha-skill/SKILL.mdx', '<Rule>conteúdo</Rule>');
+
+    await expect(buildDomain(workspaceDir)).rejects.toThrow(/SKILL\.mdx.*<Skill>/);
+  });
+
+  it('lança erro quando um <Skill> não vive num arquivo chamado SKILL.mdx', async () => {
+    writeDomainFile(
+      'minha-skill.mdx',
+      '<Skill name="minha-skill" description="descrição de teste">conteúdo</Skill>',
+    );
+
+    await expect(buildDomain(workspaceDir)).rejects.toThrow(/SKILL\.mdx/);
   });
 
   it('sobrescreve incondicionalmente um arquivo de saída já existente', async () => {
@@ -146,5 +170,71 @@ describe('buildDomain', () => {
     await buildDomain(workspaceDir);
 
     expect(readOutput('rules/user__usa-nativo.md')).toContain('**Loop:** até terminar');
+  });
+
+  it('copia os arquivos ao lado de SKILL.mdx para .claude/skills/user__<nome>/, preservando subpastas e bit de execução', async () => {
+    writeDomainFile(
+      'minha-skill/SKILL.mdx',
+      '<Skill name="minha-skill" description="descrição de teste">conteúdo</Skill>',
+    );
+    writeDomainFile('minha-skill/scripts/hello.sh', '#!/usr/bin/env bash\necho olá\n');
+    chmodSync(join(workspaceDir, 'domain/minha-skill/scripts/hello.sh'), 0o755);
+
+    await buildDomain(workspaceDir);
+
+    const destinationScript = outputPath('skills/user__minha-skill/scripts/hello.sh');
+    expect(readFileSync(destinationScript, 'utf-8')).toContain('echo olá');
+    expect(statSync(destinationScript).mode & 0o111).toBe(0o111);
+  });
+
+  it('limpa a pasta de destino da skill num rebuild, removendo asset removido de domain/', async () => {
+    writeDomainFile(
+      'minha-skill/SKILL.mdx',
+      '<Skill name="minha-skill" description="descrição de teste">conteúdo</Skill>',
+    );
+    writeDomainFile('minha-skill/scripts/a.sh', 'echo a');
+    writeDomainFile('minha-skill/scripts/b.sh', 'echo b');
+
+    await buildDomain(workspaceDir);
+    expect(existsSync(outputPath('skills/user__minha-skill/scripts/b.sh'))).toBe(true);
+
+    rmSync(join(workspaceDir, 'domain/minha-skill/scripts/b.sh'));
+    await buildDomain(workspaceDir);
+
+    expect(existsSync(outputPath('skills/user__minha-skill/scripts/a.sh'))).toBe(true);
+    expect(existsSync(outputPath('skills/user__minha-skill/scripts/b.sh'))).toBe(false);
+  });
+
+  it('ignora a pasta irmã de um <Rule>/<Block> — só <Skill> empacota assets', async () => {
+    writeDomainFile('minha-regra.mdx', '<Rule>conteúdo da regra</Rule>');
+    writeDomainFile('minha-regra/nota.txt', 'não deveria ser copiado');
+
+    await buildDomain(workspaceDir);
+
+    expect(readOutput('rules/user__minha-regra.md')).toContain('conteúdo da regra');
+    expect(existsSync(outputPath('rules/user__minha-regra'))).toBe(false);
+  });
+
+  it('rejeita quando um arquivo ao lado de SKILL.mdx tenta empacotar um SKILL.md', async () => {
+    writeDomainFile(
+      'minha-skill/SKILL.mdx',
+      '<Skill name="minha-skill" description="descrição de teste">conteúdo</Skill>',
+    );
+    writeDomainFile('minha-skill/SKILL.md', 'tentativa de sobrescrever');
+
+    await expect(buildDomain(workspaceDir)).rejects.toThrow(/SKILL\.md/);
+  });
+
+  it('não copia outro .mdx/.tsx que esteja ao lado de SKILL.mdx', async () => {
+    writeDomainFile(
+      'minha-skill/SKILL.mdx',
+      '<Skill name="minha-skill" description="descrição de teste">conteúdo</Skill>',
+    );
+    writeDomainFile('minha-skill/nota.mdx', '<Block>não é asset, é fonte</Block>');
+
+    await buildDomain(workspaceDir);
+
+    expect(existsSync(outputPath('skills/user__minha-skill/nota.mdx'))).toBe(false);
+    expect(readOutput('blocks/user__nota.md')).toContain('não é asset, é fonte');
   });
 });

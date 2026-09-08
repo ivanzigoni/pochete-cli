@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createJiti } from 'jiti';
 import type { ReactNode } from 'react';
@@ -15,6 +15,7 @@ interface RenderedDomainFile {
   sourcePath: string;
   destinationPath: string;
   markdown: string;
+  kind: DomainFileKind;
 }
 
 export async function buildDomain(workspaceDir: string): Promise<void> {
@@ -41,8 +42,56 @@ export async function buildDomain(workspaceDir: string): Promise<void> {
   const renderedFiles = await renderDomainFiles(mdxFiles, domainDir, claudeDir, baseComponents);
 
   for (const file of renderedFiles) {
-    await mkdir(path.dirname(file.destinationPath), { recursive: true });
+    const destinationDir = path.dirname(file.destinationPath);
+
+    if (file.kind !== 'skill') {
+      const possibleLeftoverFolder = path.join(
+        path.dirname(file.sourcePath),
+        path.basename(file.sourcePath, '.mdx'),
+      );
+      if (existsSync(possibleLeftoverFolder)) {
+        console.log(
+          `==> '${path.relative(domainDir, possibleLeftoverFolder)}' fica ao lado de um <Rule>/<Block> — só <Skill> empacota assets, pasta ignorada`,
+        );
+      }
+      await mkdir(destinationDir, { recursive: true });
+      await writeFile(file.destinationPath, file.markdown, 'utf-8');
+      continue;
+    }
+
+    await rm(destinationDir, { recursive: true, force: true });
+    await mkdir(destinationDir, { recursive: true });
     await writeFile(file.destinationPath, file.markdown, 'utf-8');
+    await copySkillAssets(file.sourcePath, destinationDir);
+  }
+}
+
+async function copySkillAssets(skillMdxFile: string, destinationFolder: string): Promise<void> {
+  const assetsDir = path.dirname(skillMdxFile);
+  const assetFiles = await listFilesRecursively(assetsDir);
+
+  for (const assetFile of assetFiles) {
+    if (assetFile === skillMdxFile) continue;
+
+    const relativePath = path.relative(assetsDir, assetFile);
+
+    if (assetFile.endsWith('.mdx') || assetFile.endsWith('.tsx')) {
+      console.log(`==> '${relativePath}' é fonte, não asset — não copiado para o destino da skill`);
+      continue;
+    }
+
+    if (relativePath === 'SKILL.md') {
+      throw new Error(
+        `'${assetsDir}' tenta empacotar um 'SKILL.md', que colide com o SKILL.md gerado a partir do SKILL.mdx`,
+      );
+    }
+
+    const destinationFile = path.join(destinationFolder, relativePath);
+    await mkdir(path.dirname(destinationFile), { recursive: true });
+    await copyFile(assetFile, destinationFile);
+
+    const sourceStat = await stat(assetFile);
+    await chmod(destinationFile, sourceStat.mode);
   }
 }
 
@@ -65,6 +114,19 @@ async function renderDomainFiles(
     };
 
     const markdown = await renderMarkdownDoc({ filePath: mdxFile, components: componentsForFile });
+    const filename = path.basename(mdxFile);
+
+    if (filename === 'SKILL.mdx' && tracker.kind !== 'skill') {
+      throw new Error(
+        `'${mdxFile}' se chama 'SKILL.mdx' mas não usa <Skill> como raiz — só <Skill> pode viver em 'SKILL.mdx'`,
+      );
+    }
+
+    if (tracker.kind === 'skill' && filename !== 'SKILL.mdx') {
+      throw new Error(
+        `'${mdxFile}' usa <Skill> mas não se chama 'SKILL.mdx' — uma skill vive em '<nome>/SKILL.mdx'`,
+      );
+    }
 
     if (tracker.kind === null) {
       console.log(
@@ -81,7 +143,7 @@ async function renderDomainFiles(
       );
     }
     destinationOwners.set(destinationPath, mdxFile);
-    renderedFiles.push({ sourcePath: mdxFile, destinationPath, markdown });
+    renderedFiles.push({ sourcePath: mdxFile, destinationPath, markdown, kind: tracker.kind });
   }
 
   return renderedFiles;
@@ -99,11 +161,12 @@ function trackInvocation<P>(
 }
 
 function resolveDestinationPath(kind: DomainFileKind, claudeDir: string, mdxFile: string): string {
-  const basename = path.basename(mdxFile, '.mdx');
-
   if (kind === 'skill') {
-    return path.join(claudeDir, 'skills', `user__${basename}`, 'SKILL.md');
+    const skillName = path.basename(path.dirname(mdxFile));
+    return path.join(claudeDir, 'skills', `user__${skillName}`, 'SKILL.md');
   }
+
+  const basename = path.basename(mdxFile, '.mdx');
 
   if (kind === 'rule') {
     return path.join(claudeDir, 'rules', `user__${basename}.md`);
